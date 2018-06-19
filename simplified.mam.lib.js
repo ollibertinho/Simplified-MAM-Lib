@@ -1,52 +1,81 @@
 const IOTA = require('iota.lib.js');
 const Mam = require('mam.client.js');
 
-function MAMLib(iota, seed) {
+function MAMLib(iota, seed, caching) {
   
     this.iota = iota;
     this.seed = seed;
-    let channelMode = "public";
+	
+	let channelMode = "public";
     let sideKeyTrytes = null;
-
     let mamState = Mam.init(iota, seed);
+
+	let currentMessageCount = 0;
+	let cachingInitialized = false;
+	
     const initialRoot = Mam.getRoot(mamState);
     
     mamState = Mam.changeMode(mamState, channelMode, null);
-    
-    this.setChannelMode = function (mode, retrictedSideKeyTrytes) {
-        console.log("Set channel-mode", mode);
+
+	// Sets the cahnnel-mode
+	// 'public', 'restricted', 'private'
+    this.setChannelMode = function (mode, restrictedSideKeyTrytes) {
+        console.log("set channel-mode", mode);
         channelMode = mode;
-        sideKeyTrytes = retrictedSideKeyTrytes;
-        mamState = Mam.changeMode(mamState, mode, retrictedSideKeyTrytes);      
+        sideKeyTrytes = restrictedSideKeyTrytes;
+        mamState = Mam.changeMode(mamState, channelMode, sideKeyTrytes);      
     }
 
+	// publishes a message to the stream
+	// asynchronously waits for the success message
     this.publishMessage = async function (data, callback) { 
         console.log("publish message",data);
-        var messageResponse = await _fetchMessages(Mam.getRoot(mamState));
-        mamState.channel.start = messageResponse.messages.length;
-        var msg = await _publishMessage(mamState, iota.utils.toTrytes(data));
+	
+		if(caching && cachingInitialized) {
+			currentMessageCount++;
+		} else {
+			if((caching == false) || (caching && cachingInitialized == false)) {
+				var messageResponse = await _fetchMessages(Mam.getRoot(mamState));
+				currentMessageCount = messageResponse.messages.length;			
+				if(caching) {
+					cachingInitialized = true;
+				}
+			}
+		}
+		mamState.channel.start = currentMessageCount;	        
+        var msg = await _publishMessage(mamState, iota.utils.toTrytes(data));		
         callback(msg);
     }
 
-    this.fetchMessages = async function(callback) {
-        var messageResponse = await _fetchMessages(Mam.getRoot(mamState));
-        callback(messageResponse);
-    }
+	// synchronosuly fetches all data from stream
+    this.fetchMessages = function() {
+        var messageResponse = _fetchMessages(Mam.getRoot(mamState));
+        return messageResponse
+	};
+	
+	// asynchronosuly fetches all data from stream
+	// callback is called when message is successfully fetched
+	this.fetchMessages = async function(callback) {		  
+		Mam.fetch(mamData.root, mamType, sidekey, data => 
+		{
+			callback(data);
+		});		
+	}
 
-    // Publish a new message
+    // publish a new message
     function _publishMessage(mamState, trytesMessage) {
         const message = Mam.create(mamState, trytesMessage);
 
         console.log("Root", message.root)
         console.log("Address", message.address)
 
-        // Attach the payload
+        // attach the payload
         console.log("Attaching, please wait...")
         return Mam.attach(message.payload, message.address)
             .then(() => message);
     }
 
-    // Fetch message beginning at the specific root.
+    // fetch message beginning at the specific root.
     function _fetchMessages(messageRoot) {
         console.log("Fetching Messages from Root", messageRoot);
 
