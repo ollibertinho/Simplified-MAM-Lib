@@ -1,93 +1,87 @@
-const IOTA = require('iota.lib.js');
-const Mam = require('mam.client.js');
+const Mam = require("mam.client.js");
 
 function MAMLib(iota, seed, caching) {
-  
-    this.iota = iota;
-    this.seed = seed;
-	
-	let channelMode = "public";
-    let sideKeyTrytes = null;
-    let mamState = Mam.init(iota, seed);
+  this.iota = iota;
+  this.seed = seed;
 
-	let currentMessageCount = 0;
-	let cachingInitialized = false;
-	
-    const initialRoot = Mam.getRoot(mamState);
-    
-    mamState = Mam.changeMode(mamState, channelMode, null);
+  let channelMode = "public";
+  let sideKeyTrytes = null;
+  let mamState = Mam.init(iota, seed);
 
-	// Sets the cahnnel-mode
-	// 'public', 'restricted', 'private'
-    this.setChannelMode = function (mode, restrictedSideKeyTrytes) {
-        console.log("set channel-mode", mode);
-        channelMode = mode;
-        sideKeyTrytes = restrictedSideKeyTrytes;
-        mamState = Mam.changeMode(mamState, channelMode, sideKeyTrytes);      
+  let currentMessageCount = 0;
+  let cachingInitialized = false;
+
+  const initialRoot = Mam.getRoot(mamState);
+
+  mamState = Mam.changeMode(mamState, channelMode, null);
+
+  // Sets the cahnnel-mode
+  // 'public', 'restricted', 'private'
+  this.setChannelMode = function(mode, restrictedSideKeyTrytes) {
+    console.log("set channel-mode", mode);
+    channelMode = mode;
+    sideKeyTrytes = restrictedSideKeyTrytes;
+    mamState = Mam.changeMode(mamState, channelMode, sideKeyTrytes);
+  };
+
+  // publishes a message to the stream
+  // asynchronously waits for the success message
+  this.publishMessage = async function(data, callback) {
+    console.log("publish message", data);
+
+    if (caching && cachingInitialized) {
+      currentMessageCount++;
+    } else {
+      if (caching === false || (caching && cachingInitialized === false)) {
+        var messageResponse = await _fetchMessages(initialRoot);
+        currentMessageCount = messageResponse.messages.length;
+        if (caching) {
+          cachingInitialized = true;
+        }
+      }
     }
+    mamState.channel.start = currentMessageCount;
+    var msg = await _publishMessage(mamState, iota.utils.toTrytes(data));
+    callback(msg);
+  };
 
-	// publishes a message to the stream
-	// asynchronously waits for the success message
-    this.publishMessage = async function (data, callback) { 
-        console.log("publish message",data);
-	
-		if(caching && cachingInitialized) {
-			currentMessageCount++;
-		} else {
-			if((caching == false) || (caching && cachingInitialized == false)) {
-				var messageResponse = await _fetchMessages(Mam.getRoot(mamState));
-				currentMessageCount = messageResponse.messages.length;			
-				if(caching) {
-					cachingInitialized = true;
-				}
-			}
-		}
-		mamState.channel.start = currentMessageCount;	        
-        var msg = await _publishMessage(mamState, iota.utils.toTrytes(data));		
-        callback(msg);
-    }
+  // synchronosuly fetches all data from stream
+  this.fetchMessages = function() {
+    var messageResponse = _fetchMessages(Mam.getRoot(mamState));
+    return messageResponse;
+  };
 
-	// synchronosuly fetches all data from stream
-    this.fetchMessages = function() {
-        var messageResponse = _fetchMessages(Mam.getRoot(mamState));
-        return messageResponse
-	};
-	
-	// asynchronosuly fetches all data from stream
-	// callback is called when message is successfully fetched
-	this.fetchMessages = async function(callback) {		  
-		Mam.fetch(mamData.root, mamType, sidekey, data => 
-		{
-			callback(data);
-		});		
-	}
+  // asynchronosuly fetches all data from stream
+  // callback is called when message is successfully fetched
+  this.fetchMessages = async function(callback) {
+    Mam.fetch(this.mamData.root, this.mamType, this.sidekey, data => {
+      callback(data);
+    });
+  };
 
-    // publish a new message
-    function _publishMessage(mamState, trytesMessage) {
-        const message = Mam.create(mamState, trytesMessage);
+  // publish a new message
+  function _publishMessage(mamState, trytesMessage) {
+    const message = Mam.create(mamState, trytesMessage);
 
-        console.log("Root", message.root)
-        console.log("Address", message.address)
+    console.log("Root", message.root);
+    console.log("Address", message.address);
 
-        // attach the payload
-        console.log("Attaching, please wait...")
-        return Mam.attach(message.payload, message.address)
-            .then(() => message);
-    }
+    // attach the payload
+    console.log("Attaching, please wait...");
+    return Mam.attach(message.payload, message.address).then(() => message);
+  }
 
-    // fetch message beginning at the specific root.
-    function _fetchMessages(messageRoot) {
-        console.log("Fetching Messages from Root", messageRoot);
+  // fetch message beginning at the specific root.
+  function _fetchMessages(messageRoot) {
+    console.log("Fetching Messages from Root", messageRoot);
 
-        return Mam.fetch(messageRoot, channelMode, sideKeyTrytes)
-            .then(response => {
-                response.messages.forEach(messageTrytes => 
-                {
-                    console.log("Fetched Message", iota.utils.fromTrytes(messageTrytes));
-                });
-                console.log("Next Root", response.nextRoot);
-                return response;
-        });  
-    }
+    return Mam.fetch(messageRoot, channelMode, sideKeyTrytes).then(response => {
+      response.messages.forEach(messageTrytes => {
+        console.log("Fetched Message", iota.utils.fromTrytes(messageTrytes));
+      });
+      console.log("Next Root", response.nextRoot);
+      return response;
+    });
+  }
 }
 module.exports = MAMLib;
