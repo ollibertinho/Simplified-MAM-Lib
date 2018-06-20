@@ -1,5 +1,11 @@
 const Mam = require("mam.client.js");
 
+function MAMFetchData(root) {
+  this.root = root;
+  this.sideKey = null;
+  this.mode = "public";
+}
+
 function MAMLib(iota, seed, caching) {
   this.iota = iota;
   this.seed = seed;
@@ -52,7 +58,7 @@ function MAMLib(iota, seed, caching) {
     }
     mamState.channel.start = currentMessageCount;
     await _publishMessage(mamState, iota.utils.toTrytes(data))
-      .then((msg) => {
+      .then(msg => {
         callback(null, msg);
       })
       .catch(err => {
@@ -60,10 +66,13 @@ function MAMLib(iota, seed, caching) {
       });
   };
 
-  // static asynchronosuly fetches all data from root stream
-  // callback is called when message is successfully fetched  
-  MAMLib.fetchMessages = async function(root, callback) {
-    await Mam.fetch(root, channelMode, sideKeyTrytes, data => {
+  // asynchronosuly fetches all data from root stream
+  // callback is called when message is successfully fetched
+  MAMLib.fetchMessages = async function(mamdata, callback) {
+    if (mamdata instanceof MAMFetchData === false) {
+      throw "mamdata must be an instance of MAMFetchData";
+    }
+    await Mam.fetch(mamdata.root, mamdata.mode, mamdata.sideKey, data => {
       var parsed = null;
       try {
         parsed = iota.utils.fromTrytes(data);
@@ -88,4 +97,8 @@ function MAMLib(iota, seed, caching) {
     return Mam.attach(message.payload, message.address).then(() => message);
   }
 }
-module.exports = MAMLib;
+
+module.exports = {
+  MAMLib: MAMLib,
+  MAMFetchData: MAMFetchData
+};
