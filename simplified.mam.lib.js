@@ -1,10 +1,31 @@
 const Mam = require("mam.client.js");
 
-function MAMFetchData(root) {
+function MAMFetchData(iota, root) {
   this.root = root;
+  this.iota = iota;
   this.sideKey = null;
   this.mode = "public";
 }
+// static asynchronosuly method which fetches all data from root stream
+// callback is called when message is successfully fetched
+MAMLib.fetchMessages = async function(mamdata, callback) {
+  if (mamdata instanceof MAMFetchData === false) {
+    throw "mamdata must be an instance of MAMFetchData";
+  }
+  Mam.init(mamdata.iota);
+  console.log(mamdata);
+  await Mam.fetch(mamdata.root, mamdata.mode, mamdata.sideKey, data => {
+    var parsed = null;
+    try {
+      parsed = mamdata.iota.utils.fromTrytes(data);
+    } catch (err) {
+      console.log(err);
+      parsed = data;
+    } finally {
+      callback(parsed);
+    }
+  });
+};
 
 function MAMLib(iota, seed, caching) {
   this.iota = iota;
@@ -64,25 +85,6 @@ function MAMLib(iota, seed, caching) {
       .catch(err => {
         callback(err, null);
       });
-  };
-
-  // asynchronosuly fetches all data from root stream
-  // callback is called when message is successfully fetched
-  MAMLib.fetchMessages = async function(mamdata, callback) {
-    if (mamdata instanceof MAMFetchData === false) {
-      throw "mamdata must be an instance of MAMFetchData";
-    }
-    await Mam.fetch(mamdata.root, mamdata.mode, mamdata.sideKey, data => {
-      var parsed = null;
-      try {
-        parsed = iota.utils.fromTrytes(data);
-      } catch (err) {
-        console.log(err);
-        parsed = data;
-      } finally {
-        callback(parsed);
-      }
-    });
   };
 
   // publish a new message
