@@ -37,14 +37,27 @@ publishMessage(data, callback)
 
 ### Fetch Messages
 
-Method for fetching channel-data. 
-Optional callback-function will be called, when fetching is completed, otherwise the method will return the whole fetched data.
+Static method for fetching channel-data. 
+Callback-function will be called, once a message is received.
+
 
 ```
-fetchMessages(callback)
+fetchMessages(mamdata, callback)
 ```
-
+* mamdata **MAMFetchData**
 * callback **function(data)**
+
+
+```
+function MAMFetchData(iota, root) {
+  this.root = root;
+  this.iota = iota;
+  this.sideKey = null;
+  this.mode = "public";
+}
+```
+* iota **iota** (instance of the IOTA library)
+* root **string** (root-address of the channel)
 
 ## Authors
 
