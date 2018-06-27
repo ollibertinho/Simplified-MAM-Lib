@@ -63,6 +63,6 @@ function MAMFetchData(iota, root) {
 
 * **ollibertinho** - *Tangle-Army* - [Tangle.Army](https://tangle.army)
 
-## Donations?
+## Donation
 
 SLVIISLDJRBKYERQCMDCNMABVKVPNQBGTWJBGXNOU9JGQZNIXMVXKMXSGZHTR9P9BZUH9NEKMKOGYEHFWFDYNPFKGY
