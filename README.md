@@ -1,6 +1,14 @@
 # Simplified-MAM-Lib
 Easy-to-use module based on the official IOTA-MAM-Library.
 
+## Installation
+
+To add the library to your project just install it it via npm.
+
+```
+npm install https://github.com/ollibertinho/Simplified-MAM-Lib --save
+```
+
 ## How to use
 
 ### Constructor
