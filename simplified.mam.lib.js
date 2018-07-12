@@ -59,13 +59,14 @@ function MAMLib(iota, seed, caching) {
       if (caching && cachingInitialized) {
         currentMessageCount++;
         mamState.channel.start = currentMessageCount;
-        await _publishMessage(mamState, iota.utils.toTrytes(data))
+        const message = Mam.create(mamState, iota.utils.toTrytes(data));
+        await _publishMessage(message)
           .then((retVal) => 
           {
             if(retVal instanceof Error) {
               callback(retVal, null);
             } else {
-              callback(null, retVal);
+              callback(null, message);
             }
           });
       } else {
@@ -74,13 +75,14 @@ function MAMLib(iota, seed, caching) {
             .then(messageResponse => {
               console.log(messageResponse);
               currentMessageCount = messageResponse.messages.length;
-              _publishMessage(mamState, iota.utils.toTrytes(data))
+              const message = Mam.create(mamState, iota.utils.toTrytes(data));
+              _publishMessage(message)
                 .then((retVal) => 
                 {
                   if(retVal instanceof Error) {
                     callback(retVal, null);
                   } else {
-                    callback(null, retVal);
+                    callback(null, message);
                   }
                 });
             })
@@ -99,9 +101,8 @@ function MAMLib(iota, seed, caching) {
   };
 
   // publish a new message
-  function _publishMessage(mamState, trytesMessage) {
-    const message = Mam.create(mamState, trytesMessage);
-
+  function _publishMessage(message) {
+   
     console.log("Root", message.root);
     console.log("Address", message.address);
 
