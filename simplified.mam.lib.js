@@ -58,12 +58,31 @@ function MAMLib(iota, seed, caching) {
     try {
       if (caching && cachingInitialized) {
         currentMessageCount++;
+        mamState.channel.start = currentMessageCount;
+        await _publishMessage(mamState, iota.utils.toTrytes(data))
+          .then((retVal) => 
+          {
+            if(retVal instanceof Error) {
+              callback(retVal, null);
+            } else {
+              callback(null, retVal);
+            }
+          });
       } else {
         if (caching === false || (caching && cachingInitialized === false)) {
           await Mam.fetch(initialRoot, channelMode, sideKeyTrytes)
             .then(messageResponse => {
               console.log(messageResponse);
               currentMessageCount = messageResponse.messages.length;
+              _publishMessage(mamState, iota.utils.toTrytes(data))
+                .then((retVal) => 
+                {
+                  if(retVal instanceof Error) {
+                    callback(retVal, null);
+                  } else {
+                    callback(null, retVal);
+                  }
+                });
             })
             .catch(err => {
               callback(err, null);
@@ -77,14 +96,6 @@ function MAMLib(iota, seed, caching) {
     } catch (err) {
       callback(err, null);
     }
-    mamState.channel.start = currentMessageCount;
-    await _publishMessage(mamState, iota.utils.toTrytes(data))
-      .then(msg => {
-        callback(null, msg);
-      })
-      .catch(err => {
-        callback(err, null);
-      });
   };
 
   // publish a new message
@@ -96,7 +107,7 @@ function MAMLib(iota, seed, caching) {
 
     // attach the payload
     console.log("Attaching, please wait...");
-    return Mam.attach(message.payload, message.address).then(() => message);
+    return Mam.attach(message.payload, message.address);
   }
 }
 
