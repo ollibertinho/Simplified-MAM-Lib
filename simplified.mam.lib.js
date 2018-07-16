@@ -13,7 +13,6 @@ MAMLib.fetchMessages = async function(mamdata, callback) {
     throw "mamdata must be an instance of MAMFetchData";
   }
   Mam.init(mamdata.iota);
-  console.log(mamdata);
   await Mam.fetch(mamdata.root, mamdata.mode, mamdata.sideKey, data => {
     var parsed = null;
     try {
