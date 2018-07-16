@@ -72,7 +72,6 @@ function MAMLib(iota, seed, caching) {
         if (caching === false || (caching && cachingInitialized === false)) {
           await Mam.fetch(initialRoot, channelMode, sideKeyTrytes)
             .then(messageResponse => {
-              console.log(messageResponse);
               currentMessageCount = messageResponse.messages.length;
               const message = Mam.create(mamState, iota.utils.toTrytes(data));
               _publishMessage(message)
